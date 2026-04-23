@@ -3,14 +3,14 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Ginnabong 的數位名牌</title>
+    <title>貓咪數位救援系統</title>
     <style>
         :root {
-            --primary-bg: #f8f7f2; /* 日系暖白 */
+            --primary-bg: #f8f7f2;
             --card-bg: rgba(255, 255, 255, 0.9);
             --text-main: #4a4a4a;
-            --accent-blue: #708090; /* 灰藍色 */
-            --accent-green: #8da399; /* 莫蘭迪綠 */
+            --accent-blue: #708090;
+            --accent-green: #8da399;
         }
 
         body {
@@ -34,23 +34,20 @@
             max-width: 350px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.05);
             border: 1px solid rgba(255,255,255,0.3);
+            text-align: center;
         }
 
         .cat-photo {
             width: 160px;
             height: 160px;
-            border-radius: 50%; /* 改成圓形頭像感 */
+            border-radius: 50%;
             object-fit: cover;
             border: 5px solid white;
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
             margin-bottom: 20px;
         }
 
-        h2 {
-            margin: 10px 0 5px;
-            letter-spacing: 2px;
-            font-weight: 600;
-        }
+        h2 { margin: 10px 0 5px; letter-spacing: 2px; font-weight: 600; }
 
         .status-badge {
             display: inline-block;
@@ -86,57 +83,100 @@
             gap: 10px;
         }
 
-        button:active {
-            transform: scale(0.96);
-        }
-
-        .call {
-            background-color: var(--accent-blue);
-            color: white;
-        }
-
-        .report {
-            background-color: #f0f0f0;
-            color: #555;
-        }
-
-        a {
-            text-decoration: none;
-        }
+        button:active { transform: scale(0.96); }
+        .call { background-color: var(--accent-blue); color: white; }
+        .report { background-color: #f0f0f0; color: #555; }
+        a { text-decoration: none; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <img src="IMG_4353.jpeg" class="cat-photo" alt="貓咪照片">
+    <img id="cat-img" src="" class="cat-photo" alt="讀取中...">
     
     <div class="status-badge">可能走失，尋找主人中</div>
     
-    <h2>我是 Ginnabong</h2>
+    <h2 id="cat-name">讀取中...</h2>
     
-    <div class="info-text">
-        我很溫馴但容易緊張，如果你看到我，請幫幫忙聯繫我的家人。
+    <div id="cat-desc" class="info-text">
+        正在連線至救援系統資料庫...
     </div>
 
-    <a href="tel:+886912345678">
+    <a id="call-btn" href="tel:+886912345678">
         <button class="call">
             <span>📞</span> 撥打電話給主人
         </button>
     </a>
 
-    <button class="report" onclick="sendNotice()">
+    <button class="report" onclick="reportFound()">
         <span>📍</span> 我已找到牠 (回報位置)
     </button>
 </div>
 
-<script>
-    function sendNotice() {
-        alert('主人已收到您的回報！謝謝您的熱心幫助 🙏');
-        // 未來你可以在這裡串接 Google 表單或其他通知系統
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, doc, getDoc, updateDoc, serverTimestamp, GeoPoint } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDOawawFvDc1TJEwRKxPoQaXD0ZBqbOxjg",
+        authDomain: "lost-case-26b82.firebaseapp.com",
+        projectId: "lost-case-26b82",
+        storageBucket: "lost-case-26b82.firebasestorage.app",
+        messagingSenderId: "377183470527",
+        appId: "1:377183470527:web:aa0b14e7994de7912a570a",
+        measurementId: "G-NMQB7RZWEW"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // 獲取網址參數 ?cat=1
+    const urlParams = new URLSearchParams(window.location.search);
+    const catId = urlParams.get('cat') || "1";
+
+    // 1. 初始化讀取貓咪資訊
+    async function loadCat() {
+        const docRef = doc(db, "cats", catId);
+        try {
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                document.getElementById('cat-name').innerText = "我是 " + data.name;
+                document.getElementById('cat-img').src = data.photo;
+                document.getElementById('cat-desc').innerText = "我很溫馴但容易緊張，如果你看到我，請幫幫忙聯繫我的家人。";
+            } else {
+                document.getElementById('cat-name').innerText = "找不到貓咪資訊";
+            }
+        } catch (e) {
+            console.error("讀取失敗", e);
+        }
     }
+
+    // 2. 位置回報功能
+    window.reportFound = async function() {
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(async (position) => {
+                const docRef = doc(db, "cats", catId);
+                try {
+                    await updateDoc(docRef, {
+                        last_location: new GeoPoint(position.coords.latitude, position.coords.longitude),
+                        last_seen: serverTimestamp(),
+                        status: "reported"
+                    });
+                    alert('座標已傳送！主人會儘速趕往此處，感謝您的熱心幫助 🙏');
+                } catch (e) {
+                    alert('回報失敗，請確認資料庫權限設定。');
+                }
+            }, (error) => {
+                alert('無法取得定位，請開啟手機定位權限後再試一次。');
+            });
+        } else {
+            alert('您的瀏覽器不支援定位功能。');
+        }
+    };
+
+    loadCat();
 </script>
 
-</body>
-</html>
 </body>
 </html>
