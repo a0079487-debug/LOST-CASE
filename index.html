@@ -1,71 +1,142 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-TW">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Ginnabong 的數位名牌</title>
+    <style>
+        :root {
+            --primary-bg: #f8f7f2; /* 日系暖白 */
+            --card-bg: rgba(255, 255, 255, 0.9);
+            --text-main: #4a4a4a;
+            --accent-blue: #708090; /* 灰藍色 */
+            --accent-green: #8da399; /* 莫蘭迪綠 */
+        }
 
-<style>
-body{
-  font-family:-apple-system;
-  background:#f5f5f7;
-  text-align:center;
-  padding:30px;
-}
+        body {
+            font-family: "PingFang TC", "Microsoft JhengHei", sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
 
-.card{
-  background:white;
-  border-radius:20px;
-  padding:20px;
-  max-width:400px;
-  margin:auto;
-  box-shadow:0 10px 30px rgba(0,0,0,0.1);
-}
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 30px;
+            padding: 30px 20px;
+            width: 100%;
+            max-width: 350px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.05);
+            border: 1px solid rgba(255,255,255,0.3);
+        }
 
-button{
-  width:100%;
-  padding:18px;
-  font-size:20px;
-  border-radius:14px;
-  border:none;
-  margin-top:10px;
-}
+        .cat-photo {
+            width: 160px;
+            height: 160px;
+            border-radius: 50%; /* 改成圓形頭像感 */
+            object-fit: cover;
+            border: 5px solid white;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
 
-.call{
-  background:#007AFF;
-  color:white;
-}
+        h2 {
+            margin: 10px 0 5px;
+            letter-spacing: 2px;
+            font-weight: 600;
+        }
 
-.report{
-  background:#34C759;
-  color:white;
-}
+        .status-badge {
+            display: inline-block;
+            background: #ffeded;
+            color: #eb5757;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            margin-bottom: 20px;
+        }
 
-img{
-  width:120px;
-  border-radius:20px;
-}
-</style>
+        .info-text {
+            font-size: 15px;
+            line-height: 1.6;
+            color: #777;
+            margin-bottom: 25px;
+            padding: 0 10px;
+        }
+
+        button {
+            width: 100%;
+            padding: 16px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 15px;
+            border: none;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        button:active {
+            transform: scale(0.96);
+        }
+
+        .call {
+            background-color: var(--accent-blue);
+            color: white;
+        }
+
+        .report {
+            background-color: #f0f0f0;
+            color: #555;
+        }
+
+        a {
+            text-decoration: none;
+        }
+    </style>
 </head>
-
 <body>
 
 <div class="card">
+    <img src="IMG_4353.jpeg" class="cat-photo" alt="貓咪照片">
+    
+    <div class="status-badge">可能走失，尋找主人中</div>
+    
+    <h2>我是 Ginnabong</h2>
+    
+    <div class="info-text">
+        我很溫馴但容易緊張，如果你看到我，請幫幫忙聯繫我的家人。
+    </div>
 
-  <h2>🐱 這隻貓可能走失</h2>
+    <a href="tel:+886912345678">
+        <button class="call">
+            <span>📞</span> 撥打電話給主人
+        </button>
+    </a>
 
-  <img src="IMG_4353.jpeg">
-
-  <p>如果你找到牠，請幫忙聯絡主人</p>
-
-  <a href="tel:+886912345678">
-    <button class="call">📞 一鍵聯絡主人</button>
-  </a>
-
-  <button class="report" onclick="alert('已通知主人 🙏')">
-    📍 我已找到牠
-  </button>
-
+    <button class="report" onclick="sendNotice()">
+        <span>📍</span> 我已找到牠 (回報位置)
+    </button>
 </div>
 
+<script>
+    function sendNotice() {
+        alert('主人已收到您的回報！謝謝您的熱心幫助 🙏');
+        // 未來你可以在這裡串接 Google 表單或其他通知系統
+    }
+</script>
+
+</body>
+</html>
 </body>
 </html>
