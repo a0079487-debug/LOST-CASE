@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+body{
+  font-family:-apple-system;
+  background:#f5f5f7;
+  text-align:center;
+  padding:30px;
+}
+
+.card{
+  background:white;
+  border-radius:20px;
+  padding:20px;
+  max-width:400px;
+  margin:auto;
+  box-shadow:0 10px 30px rgba(0,0,0,0.1);
+}
+
+button{
+  width:100%;
+  padding:18px;
+  font-size:20px;
+  border-radius:14px;
+  border:none;
+  margin-top:10px;
+}
+
+.call{
+  background:#007AFF;
+  color:white;
+}
+
+.report{
+  background:#34C759;
+  color:white;
+}
+
+img{
+  width:120px;
+  border-radius:20px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+
+  <h2>🐱 這隻貓可能走失</h2>
+
+  <img src="https://placekitten.com/300/300">
+
+  <p>如果你找到牠，請幫忙聯絡主人</p>
+
+  <a href="tel:+886912345678">
+    <button class="call">📞 一鍵聯絡主人</button>
+  </a>
+
+  <button class="report" onclick="alert('已通知主人 🙏')">
+    📍 我已找到牠
+  </button>
+
+</div>
+
+</body>
+</html>
