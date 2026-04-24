@@ -25,7 +25,7 @@
         <div class="header"><h1>監控總覽</h1><p>即時追蹤 Ginnabong 位置</p></div>
         <div class="info-card">
             <div class="label">目前狀態</div>
-            <div class="value"><span id="status" class="status-badge">讀取中...</span></div>
+            <div class="value"><span id="status" class="status-badge">等待回報...</span></div>
             <div class="label">最後見到時間</div>
             <div class="value" id="time">-- : --</div>
             <div class="label">回報者電話</div>
@@ -37,35 +37,57 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+        // ⚠️ 務必替換為你從 Firebase Console 複製出來的真實 Config！
         const firebaseConfig = {
-            apiKey: "你的API_KEY",
-            authDomain: "你的PROJECT_ID.firebaseapp.com",
-            projectId: "你的PROJECT_ID",
-            storageBucket: "你的PROJECT_ID.appspot.com",
-            messagingSenderId: "你的SENDER_ID",
-            appId: "你的APP_ID"
+          apiKey: "AIzaSyDOawawFvDc1TJEwRKxPoQaXD0ZBqbOxjg",
+          authDomain: "lost-case-26b82.firebaseapp.com",
+          databaseURL: "https://lost-case-26b82-default-rtdb.asia-southeast1.firebasedatabase.app",
+          projectId: "lost-case-26b82",
+          storageBucket: "lost-case-26b82.firebasestorage.app",
+          messagingSenderId: "377183470527",
+          appId: "1:377183470527:web:aa0b14e7994de7912a570a",
+          measurementId: "G-NMQB7RZWEW"
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
+        // 初始化地圖（預設座標設在中心點）
         const map = L.map('map', { zoomControl: false }).setView([24.958, 121.24], 16);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map);
 
         const marker = L.marker([24.958, 121.24]).addTo(map);
 
+        // 即時監聽 Firebase
         onSnapshot(doc(db, "cats", "1"), (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
-                const { latitude, longitude } = data.last_location;
-                const timeStr = data.last_seen ? data.last_seen.toDate().toLocaleString('zh-TW') : "剛才";
-                const pos = [latitude, longitude];
-                marker.setLatLng(pos);
-                map.flyTo(pos, 17);
-                document.getElementById('status').innerText = data.status || '未知';
-                document.getElementById('time').innerText = timeStr;
-                document.getElementById('phone').innerText = data.reporter_phone;
-                document.getElementById('phone').href = `tel:${data.reporter_phone}`;
+                
+                // 檢查資料結構是否存在
+                if (data.last_location) {
+                    const { latitude, longitude } = data.last_location;
+                    const pos = [latitude, longitude];
+                    
+                    // 更新標記與地圖
+                    marker.setLatLng(pos);
+                    map.flyTo(pos, 17);
+                    marker.bindPopup(`<b>最後位置</b><br>狀態：${data.status || '未知'}`).openPopup();
+
+                    // 更新 UI 介面
+                    document.getElementById('status').innerText = data.status || '未知';
+                    document.getElementById('time').innerText = data.last_seen ? data.last_seen.toDate().toLocaleString('zh-TW') : "剛剛";
+                    document.getElementById('phone').innerText = data.reporter_phone || "未提供";
+                    document.getElementById('phone').href = `tel:${data.reporter_phone}`;
+                    
+                    console.log("資料同步成功！", data);
+                }
+            } else {
+                console.error("找不到資料庫中的文件：cats/1");
+            }
+        }, (error) => {
+            console.error("Firebase 監聽錯誤：", error.message);
+            if (error.message.includes("permissions")) {
+                alert("資料庫讀取權限不足，請檢查 Firebase Rules！");
             }
         });
     </script>
