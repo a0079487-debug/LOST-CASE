@@ -13,13 +13,12 @@
         img { width: 100%; border-radius: 10px; margin-bottom: 15px; border: 3px solid #eee; }
         .input-group { margin-bottom: 15px; text-align: left; }
         label { display: block; margin-bottom: 5px; color: #555; font-weight: bold; font-size: 14px; }
-        select, input { width: 100%; padding: 12px; border: 2px solid #eee; border-radius: 10px; font-size: 16px; box-sizing: border-box; outline: none; transition: 0.3s; }
-        select:focus, input:focus { border-color: var(--main-color); }
-        button { width: 100%; background: var(--main-color); color: white; border: none; padding: 15px; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        select, input { width: 100%; padding: 12px; border: 2px solid #eee; border-radius: 10px; font-size: 16px; box-sizing: border-box; outline: none; }
+        button { width: 100%; background: var(--main-color); color: white; border: none; padding: 15px; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; }
         button:disabled { background: #ccc; cursor: not-allowed; }
+        #msg { margin-top: 15px; font-weight: bold; font-size: 14px; }
         .loader { border: 3px solid #f3f3f3; border-top: 3px solid var(--main-color); border-radius: 50%; width: 18px; height: 18px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; margin-right: 8px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        #msg { margin-top: 15px; font-weight: bold; font-size: 14px; }
     </style>
 </head>
 <body>
@@ -30,14 +29,14 @@
             <div class="input-group">
                 <label>📍 貓咪目前狀況</label>
                 <select id="status">
-                    <option value="靜止中（在休息/睡覺）">靜止中（在休息/睡覺）</option>
-                    <option value="移動中（正在走路/跑動）">移動中（正在走路/跑動）</option>
-                    <option value="已躲起來（草叢/車底）">已躲起來（草叢/車底）</option>
-                    <option value="看起來受傷或需要協助">看起來受傷或需要協助</option>
+                    <option value="靜止中">靜止中（在休息/睡覺）</option>
+                    <option value="移動中">移動中（正在走路/跑動）</option>
+                    <option value="已躲起來">已躲起來（草叢/車底）</option>
+                    <option value="需要協助">看起來受傷或需要協助</option>
                 </select>
             </div>
             <div class="input-group">
-                <label>📞 您的聯絡電話 (選填)</label>
+                <label>📞 您的聯絡電話</label>
                 <input type="text" id="phone" placeholder="例如：0912-345-678">
             </div>
             <button id="btn">回報目前即時位置</button>
@@ -49,7 +48,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, doc, updateDoc, GeoPoint, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // --- 請務必換成你自己的 Firebase Config ---
+        // 這裡記得填入你自己的 Firebase Config
         const firebaseConfig = {
             apiKey: "你的API_KEY",
             authDomain: "你的PROJECT_ID.firebaseapp.com",
@@ -66,13 +65,14 @@
             const btn = document.getElementById('btn');
             const msg = document.getElementById('msg');
             btn.disabled = true;
-            btn.innerHTML = '<div class="loader"></div> 正在連線衛星...';
+            btn.innerHTML = '<div class="loader"></div> 正在獲取位置...';
             msg.innerText = "";
 
+            // 關鍵優化：增加 maximumAge 讓它可以使用緩存位置，解決卡死
             const geoOptions = {
-                enableHighAccuracy: false, // 改成 false，提升電腦端與室內獲取速度
-                timeout: 8000,             // 8 秒逾時
-                maximumAge: 30000          // 允許 30 秒內的舊位置
+                enableHighAccuracy: false, 
+                timeout: 6000,             
+                maximumAge: 60000          
             };
 
             navigator.geolocation.getCurrentPosition(async (pos) => {
@@ -88,17 +88,17 @@
                     btn.innerText = "發送完成";
                 } catch (e) {
                     msg.style.color = "red";
-                    msg.innerText = "❌ 傳輸失敗，請檢查資料庫權限";
+                    msg.innerText = "❌ Firebase 更新失敗，請檢查網路。";
                     btn.disabled = false;
-                    btn.innerText = "重新回報";
+                    btn.innerText = "重試";
                 }
             }, (err) => {
-                msg.style.color = "red";
-                if (err.code === 1) msg.innerText = "❌ 請開啟瀏覽器定位權限";
-                else if (err.code === 3) msg.innerText = "❌ 定位逾時，請再試一次";
-                else msg.innerText = "❌ 無法取得定位訊號";
                 btn.disabled = false;
                 btn.innerText = "重新回報位置";
+                msg.style.color = "red";
+                if (err.code === 1) msg.innerText = "❌ 權限遭拒，請在鎖頭處允許定位。";
+                else if (err.code === 3) msg.innerText = "❌ 搜尋逾時（環境訊號弱），請再按一次。";
+                else msg.innerText = "❌ 定位失敗，請開啟 GPS 或 Wi-Fi。";
             }, geoOptions);
         });
     </script>
