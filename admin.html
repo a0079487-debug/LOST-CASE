@@ -15,7 +15,7 @@
         .header p { color: #86868b; margin-top: 5px; font-size: 14px; }
         .info-card { background: #fbfbfd; border-radius: 15px; padding: 20px; border: 1px solid #e5e5e7; }
         .label { font-size: 12px; color: #86868b; font-weight: 600; text-transform: uppercase; margin-bottom: 8px; }
-        .value { font-size: 17px; font-weight: 500; margin-bottom: 15px; color: #1d1d1f; }
+        .value { font-size: 17px; font-weight: 500; color: #1d1d1f; margin-bottom: 10px; }
         .status-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; background: var(--accent-color); color: white; font-size: 13px; }
         #coords { font-family: monospace; font-size: 13px; color: #666; }
         a { color: var(--accent-color); text-decoration: none; }
@@ -38,9 +38,9 @@
             <div class="label">回報者電話</div>
             <div class="value"><a id="phone" href="#">--</a></div>
         </div>
-        <div class="info-card" style="background: #eef7ff;">
+        <div class="info-card" style="background: #eef7ff; border: none;">
             <div class="label">地理座標</div>
-            <div id="coords">正在讀取 GPS...</div>
+            <div id="coords">正在讀取...</div>
         </div>
     </div>
 
@@ -49,6 +49,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+        // --- 請務必換成你自己的 Firebase Config ---
         const firebaseConfig = {
             apiKey: "你的API_KEY",
             authDomain: "你的PROJECT_ID.firebaseapp.com",
@@ -61,7 +62,6 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // 使用 CartoDB Voyager 底圖
         const map = L.map('map', { zoomControl: false }).setView([24.958, 121.24], 16);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map);
         L.control.zoom({ position: 'bottomright' }).addTo(map);
@@ -72,11 +72,11 @@
             if (docSnap.exists()) {
                 const data = docSnap.data();
                 const { latitude, longitude } = data.last_location;
-                const timeStr = data.last_seen ? data.last_seen.toDate().toLocaleString('zh-TW') : "等待中...";
+                const timeStr = data.last_seen ? data.last_seen.toDate().toLocaleString('zh-TW') : "剛才";
 
                 const pos = [latitude, longitude];
                 marker.setLatLng(pos);
-                map.flyTo(pos, 17); // 絲滑滑動
+                map.flyTo(pos, 17);
 
                 document.getElementById('status').innerText = data.status || '未知';
                 document.getElementById('time').innerText = timeStr;
@@ -84,7 +84,7 @@
                 document.getElementById('phone').innerText = data.reporter_phone;
                 document.getElementById('phone').href = `tel:${data.reporter_phone}`;
                 
-                marker.bindPopup(`<b>最後位置</b><br>${timeStr}`).openPopup();
+                marker.bindPopup(`<b>Ginnabong 在這</b><br>${timeStr}`).openPopup();
             }
         });
     </script>
