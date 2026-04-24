@@ -1,182 +1,103 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>貓咪數位救援系統</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>尋找 Ginnabong - 實時回報系統</title>
     <style>
-        :root {
-            --primary-bg: #f8f7f2;
-            --card-bg: rgba(255, 255, 255, 0.9);
-            --text-main: #4a4a4a;
-            --accent-blue: #708090;
-            --accent-green: #8da399;
-        }
-
-        body {
-            font-family: "PingFang TC", "Microsoft JhengHei", sans-serif;
-            background-color: var(--primary-bg);
-            color: var(--text-main);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            padding: 20px;
-        }
-
-        .card {
-            background: var(--card-bg);
-            backdrop-filter: blur(10px);
-            border-radius: 30px;
-            padding: 30px 20px;
-            width: 100%;
-            max-width: 350px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.05);
-            border: 1px solid rgba(255,255,255,0.3);
-            text-align: center;
-        }
-
-        .cat-photo {
-            width: 160px;
-            height: 160px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 5px solid white;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-        }
-
-        h2 { margin: 10px 0 5px; letter-spacing: 2px; font-weight: 600; }
-
-        .status-badge {
-            display: inline-block;
-            background: #ffeded;
-            color: #eb5757;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 13px;
-            margin-bottom: 20px;
-        }
-
-        .info-text {
-            font-size: 15px;
-            line-height: 1.6;
-            color: #777;
-            margin-bottom: 25px;
-            padding: 0 10px;
-        }
-
-        button {
-            width: 100%;
-            padding: 16px;
-            font-size: 16px;
-            font-weight: 600;
-            border-radius: 15px;
-            border: none;
-            margin-bottom: 12px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-
-        button:active { transform: scale(0.96); }
-        .call { background-color: var(--accent-blue); color: white; }
-        .report { background-color: #f0f0f0; color: #555; }
-        a { text-decoration: none; }
+        :root { --main-color: #ff6b6b; --bg-color: #f7f1e3; }
+        body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; background-color: var(--bg-color); margin: 0; padding: 20px; display: flex; justify-content: center; }
+        .card { background: white; max-width: 450px; width: 100%; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); overflow: hidden; }
+        .header { background: var(--main-color); color: white; padding: 20px; text-align: center; font-size: 24px; font-weight: bold; }
+        .content { padding: 20px; }
+        img { width: 100%; border-radius: 10px; margin-bottom: 15px; border: 3px solid #eee; }
+        .input-group { margin-bottom: 15px; text-align: left; }
+        label { display: block; margin-bottom: 5px; color: #555; font-weight: bold; }
+        select, input { width: 100%; padding: 12px; border: 2px solid #eee; border-radius: 10px; font-size: 16px; outline: none; box-sizing: border-box; transition: 0.3s; }
+        select:focus, input:focus { border-color: var(--main-color); }
+        button { width: 100%; background: var(--main-color); color: white; border: none; padding: 15px; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; }
+        button:hover { background: #ee5253; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        #msg { margin-top: 15px; padding: 10px; border-radius: 8px; display: none; font-weight: bold; }
+        .success { display: block !important; background: #dff9fb; color: #0984e3; border: 1px solid #74b9ff; }
     </style>
 </head>
 <body>
+    <div class="card">
+        <div class="header">急尋 桔拿棒 (Ginnabong)</div>
+        <div class="content">
+            <img src="IMG_4353.jpeg" alt="Ginnabong">
+            
+            <div class="input-group">
+                <label>📍 貓咪目前狀況</label>
+                <select id="status">
+                    <option value="靜止中（在休息/睡覺）">靜止中（在休息/睡覺）</option>
+                    <option value="移動中（正在走路/跑動）">移動中（正在走路/跑動）</option>
+                    <option value="已躲起來（草叢/車底）">已躲起來（草叢/車底）</option>
+                    <option value="看起來受傷或需要協助">看起來受傷或需要協助</option>
+                </select>
+            </div>
 
-<div class="card">
-    <img id="cat-img" src="" class="cat-photo" alt="讀取中...">
-    
-    <div class="status-badge">可能走失，尋找主人中</div>
-    
-    <h2 id="cat-name">讀取中...</h2>
-    
-    <div id="cat-desc" class="info-text">
-        正在連線至救援系統資料庫...
+            <div class="input-group">
+                <label>📞 您的聯絡電話 (方便主人聯繫)</label>
+                <input type="text" id="phone" placeholder="例如：0912-345-678">
+            </div>
+
+            <button id="btn">回報目前即時位置</button>
+            <div id="msg"></div>
+        </div>
     </div>
 
-    <a id="call-btn" href="tel:+886912345678">
-        <button class="call">
-            <span>📞</span> 撥打電話給主人
-        </button>
-    </a>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, doc, updateDoc, GeoPoint, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    <button class="report" onclick="reportFound()">
-        <span>📍</span> 我已找到牠 (回報位置)
-    </button>
-</div>
+        const firebaseConfig = {
+            apiKey: "你的API_KEY",
+            authDomain: "你的PROJECT_ID.firebaseapp.com",
+            projectId: "你的PROJECT_ID",
+            storageBucket: "你的PROJECT_ID.appspot.com",
+            messagingSenderId: "你的SENDER_ID",
+            appId: "你的APP_ID"
+        };
 
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, doc, getDoc, updateDoc, serverTimestamp, GeoPoint } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyDOawawFvDc1TJEwRKxPoQaXD0ZBqbOxjg",
-        authDomain: "lost-case-26b82.firebaseapp.com",
-        projectId: "lost-case-26b82",
-        storageBucket: "lost-case-26b82.firebasestorage.app",
-        messagingSenderId: "377183470527",
-        appId: "1:377183470527:web:aa0b14e7994de7912a570a",
-        measurementId: "G-NMQB7RZWEW"
-    };
+        document.getElementById('btn').addEventListener('click', async () => {
+            const btn = document.getElementById('btn');
+            const msg = document.getElementById('msg');
+            
+            btn.disabled = true;
+            btn.innerText = "正在獲取位置...";
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    // 獲取網址參數 ?cat=1
-    const urlParams = new URLSearchParams(window.location.search);
-    const catId = urlParams.get('cat') || "1";
-
-    // 1. 初始化讀取貓咪資訊
-    async function loadCat() {
-        const docRef = doc(db, "cats", catId);
-        try {
-            const docSnap = await getDoc(docRef);
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                document.getElementById('cat-name').innerText = "我是 " + data.name;
-                document.getElementById('cat-img').src = data.photo;
-                document.getElementById('cat-desc').innerText = "我很溫馴但容易緊張，如果你看到我，請幫幫忙聯繫我的家人。";
-            } else {
-                document.getElementById('cat-name').innerText = "找不到貓咪資訊";
+            if (!navigator.geolocation) {
+                alert("您的瀏覽器不支持定位功能");
+                btn.disabled = false;
+                return;
             }
-        } catch (e) {
-            console.error("讀取失敗", e);
-        }
-    }
 
-    // 2. 位置回報功能
-    window.reportFound = async function() {
-        if ("geolocation" in navigator) {
-            navigator.geolocation.getCurrentPosition(async (position) => {
-                const docRef = doc(db, "cats", catId);
+            navigator.geolocation.getCurrentPosition(async (pos) => {
                 try {
-                    await updateDoc(docRef, {
-                        last_location: new GeoPoint(position.coords.latitude, position.coords.longitude),
-                        last_seen: serverTimestamp(),
-                        status: "reported"
+                    await updateDoc(doc(db, "cats", "1"), {
+                        last_location: new GeoPoint(pos.coords.latitude, pos.coords.longitude),
+                        status: document.getElementById('status').value,
+                        reporter_phone: document.getElementById('phone').value || "未提供",
+                        last_seen: serverTimestamp()
                     });
-                    alert('座標已傳送！主人會儘速趕往此處，感謝您的熱心幫助 🙏');
+                    msg.className = "success";
+                    msg.innerText = "✅ 位置已發送！感謝您的協助！";
+                    btn.innerText = "發送完成";
                 } catch (e) {
-                    alert('回報失敗，請確認資料庫權限設定。');
+                    console.error(e);
+                    alert("更新失敗，請檢查網路連線");
+                    btn.disabled = false;
                 }
-            }, (error) => {
-                alert('無法取得定位，請開啟手機定位權限後再試一次。');
-            });
-        } else {
-            alert('您的瀏覽器不支援定位功能。');
-        }
-    };
-
-    loadCat();
-</script>
-
+            }, (err) => {
+                alert("無法獲取定位權限，請開啟 GPS 並允許瀏覽器存取位置");
+                btn.disabled = false;
+            }, { enableHighAccuracy: true });
+        });
+    </script>
 </body>
 </html>
