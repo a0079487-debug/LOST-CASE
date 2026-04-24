@@ -1,101 +1,73 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="utf-8">
-    <title>飼主管理後台 - 貓咪實時追蹤</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ginnabong 監控中心 - 實時地圖</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; flex-direction: column; height: 100vh; background: #f4f4f9; }
-        #header { background: #2c3e50; color: white; padding: 15px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-        #map { flex-grow: 1; width: 100%; }
-        .info-panel { height: 180px; background: white; overflow-y: auto; padding: 15px; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }
-        .cat-item { border-bottom: 1px solid #eee; padding: 12px; display: flex; justify-content: space-between; align-items: center; }
-        .status-reported { color: #e74c3c; font-weight: bold; background: #fdf2f2; padding: 4px 8px; border-radius: 4px; }
-        .status-safe { color: #27ae60; font-weight: bold; }
+        body, html { margin: 0; padding: 0; height: 100%; width: 100%; }
+        #map { height: 100%; width: 100%; }
+        .custom-popup { font-family: "Microsoft JhengHei", sans-serif; min-width: 200px; }
+        .custom-popup b { color: #ff6b6b; font-size: 16px; }
+        .status-tag { display: inline-block; background: #f1f2f6; padding: 2px 8px; border-radius: 5px; margin-top: 5px; color: #2f3542; }
     </style>
 </head>
 <body>
+    <div id="map"></div>
 
-<div id="header">
-    <h1>🐾 貓咪救援系統 - 飼主管理後台</h1>
-</div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-<div id="map"></div>
+        const firebaseConfig = {
+            apiKey: "你的API_KEY",
+            authDomain: "你的PROJECT_ID.firebaseapp.com",
+            projectId: "你的PROJECT_ID",
+            storageBucket: "你的PROJECT_ID.appspot.com",
+            messagingSenderId: "你的SENDER_ID",
+            appId: "你的APP_ID"
+        };
 
-<div class="info-panel" id="cat-list">
-    <div style="text-align:center; color: #999; padding-top: 20px;">正在連線至 Firebase 資料庫...</div>
-</div>
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+        // 初始化地圖中心 (先設在中原大學附近)
+        const map = L.map('map').setView([24.958, 121.24], 16);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
 
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        // 建立一個圖釘
+        const marker = L.marker([24.958, 121.24]).addTo(map);
 
-    // 修正後的 Config (確保語法 100% 正確)
-    const firebaseConfig = {
-        apiKey: "AIzaSyDOawawFvDc1TJEwRKxPoQaXD0ZBqbOxjg",
-        authDomain: "lost-case-26b82.firebaseapp.com",
-        projectId: "lost-case-26b82",
-        storageBucket: "lost-case-26b82.firebasestorage.app",
-        messagingSenderId: "377183470527",
-        appId: "1:377183470527:web:aa0b14e7994de7912a570a" 
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    // 初始化地圖
-    const map = L.map('map').setView([24.96, 121.24], 13);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(map);
-
-    const markers = {};
-
-    // 實時監聽
-    onSnapshot(collection(db, "cats"), (snapshot) => {
-        const listEl = document.getElementById('cat-list');
-        listEl.innerHTML = "";
-        
-        snapshot.forEach((doc) => {
-            const data = doc.data();
-            const id = doc.id;
-            
-            if (data.last_location) {
-                const lat = data.last_location.latitude;
-                const lng = data.last_location.longitude;
-                const pos = [lat, lng];
-
-                // 更新圖釘
-                if (markers[id]) {
-                    markers[id].setLatLng(pos);
-                } else {
-                    markers[id] = L.marker(pos).addTo(map).bindPopup(`<b>${data.name}</b><br>狀態: ${data.status}`);
-                }
-
-                // 更新列表卡片
-                const item = document.createElement('div');
-                item.className = 'cat-item';
-                const statusClass = data.status === 'reported' ? 'status-reported' : 'status-safe';
-                const statusText = data.status === 'reported' ? '📍 已回報位置' : '✅ 安全';
+        // 即時聽取資料庫變化
+        onSnapshot(doc(db, "cats", "1"), (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                const { latitude, longitude } = data.last_location;
                 
-                item.innerHTML = `
-                    <div>
-                        <strong>${data.name}</strong> (ID: ${id})<br>
-                        <small style="color: #666;">${lat.toFixed(4)}, ${lng.toFixed(4)}</small>
+                // 處理時間顯示
+                const timeString = data.last_seen 
+                    ? data.last_seen.toDate().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }) 
+                    : "正在讀取時間...";
+
+                const pos = [latitude, longitude];
+                marker.setLatLng(pos);
+                map.panTo(pos); // 地圖自動跟隨
+
+                // 更新資訊視窗
+                marker.bindPopup(`
+                    <div class="custom-popup">
+                        <b>📍 發現 Ginnabong！</b><br>
+                        <div class="status-tag">狀態：${data.status || '未知'}</div><br>
+                        📞 聯絡路人：<a href="tel:${data.reporter_phone}">${data.reporter_phone || '未提供'}</a><br>
+                        🕒 最後看到：<br>${timeString}
                     </div>
-                    <div class="${statusClass}">${statusText}</div>
-                `;
-                listEl.appendChild(item);
+                `).openPopup();
             }
         });
-    }, (error) => {
-        console.error("資料庫連線錯誤:", error);
-        document.getElementById('cat-list').innerHTML = "資料庫連線失敗，請檢查 Firebase Rule 設定。";
-    });
-</script>
-
+    </script>
 </body>
 </html>
