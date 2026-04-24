@@ -3,18 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ginnabong 監控中心 - 實時地圖</title>
+    <title>Ginnabong 監控中心</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        body, html { margin: 0; padding: 0; height: 100%; width: 100%; }
-        #map { height: 100%; width: 100%; }
-        .custom-popup { font-family: "Microsoft JhengHei", sans-serif; min-width: 200px; }
-        .custom-popup b { color: #ff6b6b; font-size: 16px; }
-        .status-tag { display: inline-block; background: #f1f2f6; padding: 2px 8px; border-radius: 5px; margin-top: 5px; color: #2f3542; }
+        :root {
+            --bg-color: #f5f5f7;
+            --card-bg: #ffffff;
+            --accent-color: #007aff; /* iOS Blue */
+            --text-main: #1d1d1f;
+        }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            background-color: var(--bg-color);
+            margin: 0; display: flex; height: 100vh; color: var(--text-main);
+        }
+        /* 左側地圖區 */
+        #map-container { flex: 2; padding: 20px; position: relative; }
+        #map { 
+            height: 100%; width: 100%; border-radius: 20px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+        /* 右側資訊欄 */
+        #sidebar { 
+            flex: 1; min-width: 350px; background: var(--card-bg); 
+            border-left: 1px solid #d2d2d7; padding: 30px;
+            display: flex; flex-direction: column; gap: 20px;
+        }
+        .info-card {
+            background: #fbfbfd; border-radius: 15px; padding: 20px;
+            border: 1px solid #e5e5e7;
+        }
+        .label { font-size: 13px; color: #86868b; font-weight: 600; text-transform: uppercase; margin-bottom: 5px; }
+        .value { font-size: 18px; font-weight: 500; margin-bottom: 15px; }
+        .status-badge {
+            display: inline-block; padding: 4px 12px; border-radius: 20px;
+            background: var(--accent-color); color: white; font-size: 14px;
+        }
+        .header h1 { font-size: 24px; margin: 0; letter-spacing: -0.5px; }
+        .header p { color: #86868b; margin-top: 5px; }
+        
+        /* 自定義圖釘顏色 */
+        .leaflet-marker-icon { filter: drop-shadow(0 2px 5px rgba(0,0,0,0.2)); }
     </style>
 </head>
 <body>
-    <div id="map"></div>
+
+    <div id="map-container">
+        <div id="map"></div>
+    </div>
+
+    <div id="sidebar">
+        <div class="header">
+            <h1>監控總覽</h1>
+            <p>正在實時追蹤 Ginnabong 的位置</p>
+        </div>
+
+        <div class="info-card">
+            <div class="label">目前狀態</div>
+            <div class="value"><span id="status" class="status-badge">讀取中...</span></div>
+            
+            <div class="label">最後見到時間</div>
+            <div class="value" id="time">-- : --</div>
+            
+            <div class="label">回報者電話</div>
+            <div class="value"><a id="phone" href="#" style="color: var(--accent-color); text-decoration: none;">--</a></div>
+        </div>
+
+        <div class="info-card" style="background: #e1f5fe; border: none;">
+            <div class="label" style="color: #0288d1;">經緯度座標</div>
+            <div class="value" id="coords" style="font-family: monospace; font-size: 14px;">(0.000, 0.000)</div>
+        </div>
+    </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script type="module">
@@ -33,39 +93,39 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // 初始化地圖中心 (先設在中原大學附近)
-        const map = L.map('map').setView([24.958, 121.24], 16);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap contributors'
+        // 使用高質感的 CartoDB Voyager 底圖 (類 Apple Maps 簡約感)
+        const map = L.map('map', { zoomControl: false }).setView([24.958, 121.24], 16);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; CartoDB'
         }).addTo(map);
+        
+        // 把縮放按鈕移到右下角
+        L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-        // 建立一個圖釘
         const marker = L.marker([24.958, 121.24]).addTo(map);
 
-        // 即時聽取資料庫變化
         onSnapshot(doc(db, "cats", "1"), (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
                 const { latitude, longitude } = data.last_location;
                 
-                // 處理時間顯示
-                const timeString = data.last_seen 
-                    ? data.last_seen.toDate().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }) 
-                    : "正在讀取時間...";
+                const timeStr = data.last_seen 
+                    ? data.last_seen.toDate().toLocaleString('zh-TW', { hour12: false }) 
+                    : "等待回報...";
 
+                // 更新地圖
                 const pos = [latitude, longitude];
                 marker.setLatLng(pos);
-                map.panTo(pos); // 地圖自動跟隨
+                map.flyTo(pos, 17); // 絲滑滑動效果
 
-                // 更新資訊視窗
-                marker.bindPopup(`
-                    <div class="custom-popup">
-                        <b>📍 發現 Ginnabong！</b><br>
-                        <div class="status-tag">狀態：${data.status || '未知'}</div><br>
-                        📞 聯絡路人：<a href="tel:${data.reporter_phone}">${data.reporter_phone || '未提供'}</a><br>
-                        🕒 最後看到：<br>${timeString}
-                    </div>
-                `).openPopup();
+                // 更新右側面板資訊
+                document.getElementById('status').innerText = data.status || '未知';
+                document.getElementById('time').innerText = timeStr;
+                document.getElementById('coords').innerText = `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+                
+                const phoneTag = document.getElementById('phone');
+                phoneTag.innerText = data.reporter_phone || '未提供';
+                phoneTag.href = `tel:${data.reporter_phone}`;
             }
         });
     </script>
