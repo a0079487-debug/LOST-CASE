@@ -6,20 +6,20 @@
     <title>尋找 Ginnabong - 實時回報系統</title>
     <style>
         :root { --main-color: #ff6b6b; --bg-color: #f7f1e3; }
-        body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; background-color: var(--bg-color); margin: 0; padding: 20px; display: flex; justify-content: center; }
-        .card { background: white; max-width: 450px; width: 100%; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); overflow: hidden; }
-        .header { background: var(--main-color); color: white; padding: 20px; text-align: center; font-size: 24px; font-weight: bold; }
+        body { font-family: -apple-system, sans-serif; background-color: var(--bg-color); margin: 0; padding: 20px; display: flex; justify-content: center; }
+        .card { background: white; max-width: 450px; width: 100%; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); overflow: hidden; text-align: center; }
+        .header { background: var(--main-color); color: white; padding: 20px; font-size: 24px; font-weight: bold; }
         .content { padding: 20px; }
-        img { width: 100%; border-radius: 10px; margin-bottom: 15px; border: 3px solid #eee; }
+        img { width: 100%; border-radius: 10px; margin-bottom: 15px; }
         .input-group { margin-bottom: 15px; text-align: left; }
-        label { display: block; margin-bottom: 5px; color: #555; font-weight: bold; }
-        select, input { width: 100%; padding: 12px; border: 2px solid #eee; border-radius: 10px; font-size: 16px; outline: none; box-sizing: border-box; transition: 0.3s; }
+        label { display: block; margin-bottom: 5px; color: #555; font-weight: bold; font-size: 14px; }
+        select, input { width: 100%; padding: 12px; border: 2px solid #eee; border-radius: 10px; font-size: 16px; box-sizing: border-box; outline: none; }
         select:focus, input:focus { border-color: var(--main-color); }
-        button { width: 100%; background: var(--main-color); color: white; border: none; padding: 15px; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; }
-        button:hover { background: #ee5253; }
-        button:disabled { background: #ccc; cursor: not-allowed; }
-        #msg { margin-top: 15px; padding: 10px; border-radius: 8px; display: none; font-weight: bold; }
-        .success { display: block !important; background: #dff9fb; color: #0984e3; border: 1px solid #74b9ff; }
+        button { width: 100%; background: var(--main-color); color: white; border: none; padding: 15px; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        button:disabled { background: #ccc; }
+        .loader { border: 3px solid #f3f3f3; border-top: 3px solid var(--main-color); border-radius: 50%; width: 18px; height: 18px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; margin-right: 8px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        #msg { margin-top: 15px; font-weight: bold; font-size: 14px; }
     </style>
 </head>
 <body>
@@ -27,7 +27,6 @@
         <div class="header">急尋 桔拿棒 (Ginnabong)</div>
         <div class="content">
             <img src="IMG_4353.jpeg" alt="Ginnabong">
-            
             <div class="input-group">
                 <label>📍 貓咪目前狀況</label>
                 <select id="status">
@@ -37,12 +36,10 @@
                     <option value="看起來受傷或需要協助">看起來受傷或需要協助</option>
                 </select>
             </div>
-
             <div class="input-group">
                 <label>📞 您的聯絡電話 (方便主人聯繫)</label>
                 <input type="text" id="phone" placeholder="例如：0912-345-678">
             </div>
-
             <button id="btn">回報目前即時位置</button>
             <div id="msg"></div>
         </div>
@@ -64,18 +61,11 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        document.getElementById('btn').addEventListener('click', async () => {
+        document.getElementById('btn').addEventListener('click', () => {
             const btn = document.getElementById('btn');
             const msg = document.getElementById('msg');
-            
             btn.disabled = true;
-            btn.innerText = "正在獲取位置...";
-
-            if (!navigator.geolocation) {
-                alert("您的瀏覽器不支持定位功能");
-                btn.disabled = false;
-                return;
-            }
+            btn.innerHTML = '<div class="loader"></div> 正在連線衛星...';
 
             navigator.geolocation.getCurrentPosition(async (pos) => {
                 try {
@@ -85,18 +75,21 @@
                         reporter_phone: document.getElementById('phone').value || "未提供",
                         last_seen: serverTimestamp()
                     });
-                    msg.className = "success";
-                    msg.innerText = "✅ 位置已發送！感謝您的協助！";
+                    msg.style.color = "#0984e3";
+                    msg.innerText = "✅ 回報成功！感謝您的幫忙！";
                     btn.innerText = "發送完成";
                 } catch (e) {
-                    console.error(e);
-                    alert("更新失敗，請檢查網路連線");
+                    msg.style.color = "red";
+                    msg.innerText = "❌ 傳輸失敗，請檢查網路";
                     btn.disabled = false;
+                    btn.innerText = "重新回報位置";
                 }
             }, (err) => {
-                alert("無法獲取定位權限，請開啟 GPS 並允許瀏覽器存取位置");
+                msg.style.color = "red";
+                msg.innerText = "❌ 無法取得定位，請確認 GPS 已開啟";
                 btn.disabled = false;
-            }, { enableHighAccuracy: true });
+                btn.innerText = "重新回報位置";
+            }, { enableHighAccuracy: false, timeout: 10000 });
         });
     </script>
 </body>
