@@ -11,45 +11,32 @@
         #map-container { flex: 2; padding: 20px; box-sizing: border-box; }
         #map { height: 100%; width: 100%; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); border: 1px solid rgba(0,0,0,0.05); }
         #sidebar { flex: 1; min-width: 320px; background: var(--card-bg); border-left: 1px solid #d2d2d7; padding: 30px; display: flex; flex-direction: column; gap: 20px; }
-        .header h1 { font-size: 24px; margin: 0; letter-spacing: -0.5px; }
-        .header p { color: #86868b; margin-top: 5px; font-size: 14px; }
+        .header h1 { font-size: 24px; margin: 0; }
         .info-card { background: #fbfbfd; border-radius: 15px; padding: 20px; border: 1px solid #e5e5e7; }
-        .label { font-size: 12px; color: #86868b; font-weight: 600; text-transform: uppercase; margin-bottom: 8px; }
+        .label { font-size: 12px; color: #86868b; font-weight: 600; margin-bottom: 8px; }
         .value { font-size: 17px; font-weight: 500; color: #1d1d1f; margin-bottom: 10px; }
         .status-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; background: var(--accent-color); color: white; font-size: 13px; }
-        #coords { font-family: monospace; font-size: 13px; color: #666; }
         a { color: var(--accent-color); text-decoration: none; }
     </style>
 </head>
 <body>
-    <div id="map-container">
-        <div id="map"></div>
-    </div>
+    <div id="map-container"><div id="map"></div></div>
     <div id="sidebar">
-        <div class="header">
-            <h1>監控總覽</h1>
-            <p>實時追蹤 Ginnabong 位置</p>
-        </div>
+        <div class="header"><h1>監控總覽</h1><p>即時追蹤 Ginnabong 位置</p></div>
         <div class="info-card">
             <div class="label">目前狀態</div>
-            <div class="value"><span id="status" class="status-badge">等待資料...</span></div>
+            <div class="value"><span id="status" class="status-badge">讀取中...</span></div>
             <div class="label">最後見到時間</div>
-            <div class="value" id="time">-- : -- : --</div>
+            <div class="value" id="time">-- : --</div>
             <div class="label">回報者電話</div>
             <div class="value"><a id="phone" href="#">--</a></div>
         </div>
-        <div class="info-card" style="background: #eef7ff; border: none;">
-            <div class="label">地理座標</div>
-            <div id="coords">正在讀取...</div>
-        </div>
     </div>
-
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // --- 請務必換成你自己的 Firebase Config ---
         const firebaseConfig = {
             apiKey: "你的API_KEY",
             authDomain: "你的PROJECT_ID.firebaseapp.com",
@@ -64,7 +51,6 @@
 
         const map = L.map('map', { zoomControl: false }).setView([24.958, 121.24], 16);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map);
-        L.control.zoom({ position: 'bottomright' }).addTo(map);
 
         const marker = L.marker([24.958, 121.24]).addTo(map);
 
@@ -73,18 +59,13 @@
                 const data = docSnap.data();
                 const { latitude, longitude } = data.last_location;
                 const timeStr = data.last_seen ? data.last_seen.toDate().toLocaleString('zh-TW') : "剛才";
-
                 const pos = [latitude, longitude];
                 marker.setLatLng(pos);
                 map.flyTo(pos, 17);
-
                 document.getElementById('status').innerText = data.status || '未知';
                 document.getElementById('time').innerText = timeStr;
-                document.getElementById('coords').innerText = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
                 document.getElementById('phone').innerText = data.reporter_phone;
                 document.getElementById('phone').href = `tel:${data.reporter_phone}`;
-                
-                marker.bindPopup(`<b>Ginnabong 在這</b><br>${timeStr}`).openPopup();
             }
         });
     </script>
