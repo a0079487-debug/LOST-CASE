@@ -10,13 +10,13 @@
         .card { background: white; max-width: 450px; width: 100%; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); overflow: hidden; text-align: center; }
         .header { background: var(--main-color); color: white; padding: 20px; font-size: 24px; font-weight: bold; }
         .content { padding: 20px; }
-        img { width: 100%; border-radius: 10px; margin-bottom: 15px; }
+        img { width: 100%; border-radius: 10px; margin-bottom: 15px; border: 3px solid #eee; }
         .input-group { margin-bottom: 15px; text-align: left; }
         label { display: block; margin-bottom: 5px; color: #555; font-weight: bold; font-size: 14px; }
-        select, input { width: 100%; padding: 12px; border: 2px solid #eee; border-radius: 10px; font-size: 16px; box-sizing: border-box; outline: none; }
+        select, input { width: 100%; padding: 12px; border: 2px solid #eee; border-radius: 10px; font-size: 16px; box-sizing: border-box; outline: none; transition: 0.3s; }
         select:focus, input:focus { border-color: var(--main-color); }
         button { width: 100%; background: var(--main-color); color: white; border: none; padding: 15px; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        button:disabled { background: #ccc; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
         .loader { border: 3px solid #f3f3f3; border-top: 3px solid var(--main-color); border-radius: 50%; width: 18px; height: 18px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; margin-right: 8px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         #msg { margin-top: 15px; font-weight: bold; font-size: 14px; }
@@ -37,7 +37,7 @@
                 </select>
             </div>
             <div class="input-group">
-                <label>📞 您的聯絡電話 (方便主人聯繫)</label>
+                <label>📞 您的聯絡電話 (選填)</label>
                 <input type="text" id="phone" placeholder="例如：0912-345-678">
             </div>
             <button id="btn">回報目前即時位置</button>
@@ -49,6 +49,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, doc, updateDoc, GeoPoint, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+        // --- 請務必換成你自己的 Firebase Config ---
         const firebaseConfig = {
             apiKey: "你的API_KEY",
             authDomain: "你的PROJECT_ID.firebaseapp.com",
@@ -66,6 +67,13 @@
             const msg = document.getElementById('msg');
             btn.disabled = true;
             btn.innerHTML = '<div class="loader"></div> 正在連線衛星...';
+            msg.innerText = "";
+
+            const geoOptions = {
+                enableHighAccuracy: false, // 改成 false，提升電腦端與室內獲取速度
+                timeout: 8000,             // 8 秒逾時
+                maximumAge: 30000          // 允許 30 秒內的舊位置
+            };
 
             navigator.geolocation.getCurrentPosition(async (pos) => {
                 try {
@@ -76,20 +84,22 @@
                         last_seen: serverTimestamp()
                     });
                     msg.style.color = "#0984e3";
-                    msg.innerText = "✅ 回報成功！感謝您的幫忙！";
+                    msg.innerText = "✅ 回報成功！";
                     btn.innerText = "發送完成";
                 } catch (e) {
                     msg.style.color = "red";
-                    msg.innerText = "❌ 傳輸失敗，請檢查網路";
+                    msg.innerText = "❌ 傳輸失敗，請檢查資料庫權限";
                     btn.disabled = false;
-                    btn.innerText = "重新回報位置";
+                    btn.innerText = "重新回報";
                 }
             }, (err) => {
                 msg.style.color = "red";
-                msg.innerText = "❌ 無法取得定位，請確認 GPS 已開啟";
+                if (err.code === 1) msg.innerText = "❌ 請開啟瀏覽器定位權限";
+                else if (err.code === 3) msg.innerText = "❌ 定位逾時，請再試一次";
+                else msg.innerText = "❌ 無法取得定位訊號";
                 btn.disabled = false;
                 btn.innerText = "重新回報位置";
-            }, { enableHighAccuracy: false, timeout: 10000 });
+            }, geoOptions);
         });
     </script>
 </body>
